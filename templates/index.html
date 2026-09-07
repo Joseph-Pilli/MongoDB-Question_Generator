@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MongoDB Question Generator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>MongoDB Question Generator</h1>
+      <p class="subtitle">Analyze an assignment, configure files, and generate an exam package.</p>
+    </header>
+
+    <div class="syllabus-banner">
+      <strong>{{ syllabus_title }}</strong>
+      <p>{{ syllabus_description }}</p>
+      <p class="provider-note">{{ llm_provider_label }}</p>
+      <p class="timing-hint">Analyze is instant. Generate uses Cursor Cloud Agents and may take several minutes.</p>
+    </div>
+
+    <section class="form-section">
+      <div class="input-mode-tabs" id="input-mode-tabs">
+        <button type="button" class="mode-tab active" data-mode="paste">Paste text</button>
+        <button type="button" class="mode-tab" data-mode="doc">Upload document</button>
+      </div>
+
+      <div id="paste-panel">
+        <div class="field">
+          <label for="assignment-text">Assignment / concept <span class="required">*</span></label>
+          <textarea id="assignment-text" rows="8" placeholder="Paste the company assignment or describe the MongoDB concept to assess…"></textarea>
+        </div>
+      </div>
+
+      <div id="doc-panel" class="hidden">
+        <div class="field">
+          <label>Upload document <span class="required">*</span></label>
+          <div class="file-drop" id="file-drop">
+            <p class="file-drop-label">Drop a file here or <button type="button" class="link-btn" id="browse-btn">browse</button></p>
+            <p class="file-drop-hint">Supported: .txt, .md, .pdf, .docx (max 5 MB)</p>
+            <p class="file-selected hidden" id="file-selected"></p>
+          </div>
+          <input type="file" id="assignment-file" accept=".txt,.md,.pdf,.docx" hidden />
+        </div>
+        <div class="field hidden" id="extracted-preview-wrap">
+          <label>Extracted text preview</label>
+          <pre class="extracted-preview" id="extracted-preview"></pre>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="question-title">Question title <span class="optional">(optional)</span></label>
+        <input type="text" id="question-title" placeholder="e.g. Pet Adoption Portal — leave blank to auto-generate" />
+      </div>
+
+      <div class="field">
+        <label for="domain">Domain <span class="optional">(optional)</span></label>
+        <input type="text" id="domain" placeholder="e.g. pet adoption, hospital inventory" />
+      </div>
+
+      <div class="field-grid">
+        <div class="field">
+          <label for="files-to-implement">Files students must implement <span class="optional">(optional)</span></label>
+          <textarea id="files-to-implement" rows="5" placeholder="One path per line, e.g.&#10;models/pet.js&#10;controllers/petController.js&#10;routes/petRoutes.js"></textarea>
+          <p class="field-hint">Prefilled copies of these files will be empty. Students write all logic here.</p>
+        </div>
+        <div class="field">
+          <label for="files-scaffold">Pre-filled files (do NOT modify) <span class="optional">(optional)</span></label>
+          <textarea id="files-scaffold" rows="5" placeholder="One path per line, e.g.&#10;server.js&#10;app.http"></textarea>
+          <p class="field-hint">These are provided complete in prefilled. `db.js` and `package.json` are always injected.</p>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="primary-btn" id="analyze-btn">
+          <span class="btn-label">Analyze assignment</span>
+          <span class="spinner hidden" id="analyze-spinner"></span>
+        </button>
+      </div>
+
+      <div class="error-banner hidden" id="error-banner"></div>
+    </section>
+
+    <section class="analysis-section hidden" id="analysis-section">
+      <div class="analysis-header">
+        <h2>Syllabus coverage</h2>
+        <p class="analysis-summary" id="analysis-summary"></p>
+      </div>
+      <div class="coverage-legend">
+        <span class="legend-covered">■ Covered in assignment</span>
+        <span class="legend-uncovered">■ Not covered</span>
+      </div>
+      <div class="coverage-grid" id="coverage-grid"></div>
+      <div class="out-of-syllabus hidden" id="out-of-syllabus">
+        <h3>Out of syllabus (detected)</h3>
+        <ul id="out-list"></ul>
+      </div>
+      <div class="action-row">
+        <button type="button" class="primary-btn" id="generate-btn" disabled>
+          <span class="btn-label">Generate prefilled + solution + tests</span>
+          <span class="spinner hidden" id="generate-spinner"></span>
+        </button>
+      </div>
+    </section>
+
+    <section class="result-section hidden" id="result-section">
+      <div class="result-header">
+        <h2 id="result-title"></h2>
+        <p class="result-meta" id="result-meta"></p>
+        <a class="primary-btn download-btn" id="download-btn" href="#">Download ZIP</a>
+      </div>
+      <div class="result-meta-grid">
+        <div>
+          <h3>Syllabus topics</h3>
+          <ul id="syllabus-topics-list"></ul>
+        </div>
+        <div>
+          <h3>Student implements</h3>
+          <ul id="student-files-list"></ul>
+        </div>
+        <div>
+          <h3>Pre-filled (scaffold)</h3>
+          <ul id="scaffold-files-list"></ul>
+        </div>
+      </div>
+      <p class="structure-rationale" id="structure-rationale"></p>
+      <div class="folder-tabs" id="folder-tabs">
+        <button type="button" class="tab active" data-folder="prefilled">_prefilled</button>
+        <button type="button" class="tab" data-folder="solution">_solution</button>
+        <button type="button" class="tab" data-folder="tests">_tests</button>
+      </div>
+      <div class="preview-layout">
+        <div class="file-list" id="file-list"></div>
+        <div class="file-preview">
+          <div class="file-preview-header" id="file-preview-header"></div>
+          <pre class="file-content" id="file-content"></pre>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
