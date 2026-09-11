@@ -20,6 +20,19 @@
       <p class="timing-hint">Analyze is instant. Generate uses Cursor Cloud Agents and may take several minutes.</p>
     </div>
 
+    <section class="settings-section" aria-labelledby="settings-title">
+      <div>
+        <h2 id="settings-title">API key</h2>
+        <p class="settings-hint">Your key is stored locally in this app's <code>.env</code> file and is never shown after saving.</p>
+      </div>
+      <div class="api-key-row">
+        <label class="sr-only" for="api-key">OpenAI API key</label>
+        <input type="password" id="api-key" autocomplete="off" placeholder="sk-..." />
+        <button type="button" class="secondary-btn" id="save-api-key-btn">Save key</button>
+      </div>
+      <p class="settings-status" id="api-key-status" role="status"></p>
+    </section>
+
     <section class="form-section">
       <div class="input-mode-tabs" id="input-mode-tabs">
         <button type="button" class="mode-tab active" data-mode="paste">Paste text</button>

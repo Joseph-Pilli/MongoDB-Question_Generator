@@ -1,9 +1,12 @@
 import traceback
+import os
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 
-load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
+ROOT = Path(__file__).resolve().parent
+ENV_PATH = ROOT / ".env"
+load_dotenv(ENV_PATH, override=True)
 
 from flask import Flask, jsonify, render_template, request, send_file
 from lib.assignment_analyzer import analyze_assignment, build_spec_from_selection
@@ -26,6 +29,26 @@ def index():
         syllabus_topics=ALLOWED_SYLLABUS_TOPICS,
         llm_provider_label=provider_label(),
     )
+
+
+@app.route("/settings/api-key", methods=["POST"])
+def save_api_key():
+    """Persist the user's OpenAI API key without returning or logging it."""
+    body = request.get_json(silent=True) or {}
+    api_key = (body.get("api_key") or "").strip()
+
+    if not api_key:
+        return jsonify({"error": "Enter an OpenAI API key."}), 400
+    if not api_key.startswith("sk-"):
+        return jsonify({"error": "OpenAI API keys must start with sk-."}), 400
+
+    try:
+        set_key(str(ENV_PATH), "OPENAI_API_KEY", api_key)
+        os.environ["OPENAI_API_KEY"] = api_key
+    except OSError as e:
+        return jsonify({"error": f"Could not update {ENV_PATH.name}: {e}"}), 500
+
+    return jsonify({"message": "API key saved."})
 
 
 @app.route("/analyze", methods=["POST"])

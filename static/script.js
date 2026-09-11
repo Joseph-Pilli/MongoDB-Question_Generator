@@ -35,6 +35,9 @@
   const studentFilesList = document.getElementById("student-files-list");
   const scaffoldFilesList = document.getElementById("scaffold-files-list");
   const syllabusTopicsList = document.getElementById("syllabus-topics-list");
+  const apiKeyInput = document.getElementById("api-key");
+  const saveApiKeyBtn = document.getElementById("save-api-key-btn");
+  const apiKeyStatus = document.getElementById("api-key-status");
 
   let inputMode = "paste";
   let selectedFile = null;
@@ -63,6 +66,29 @@
     errorBanner.classList.add("hidden");
     errorBanner.textContent = "";
   }
+
+  saveApiKeyBtn.addEventListener("click", async () => {
+    const apiKey = apiKeyInput.value.trim();
+    apiKeyStatus.textContent = "";
+    saveApiKeyBtn.disabled = true;
+
+    try {
+      const res = await fetch("/settings/api-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_key: apiKey }),
+      });
+      const data = await res.json();
+      apiKeyStatus.textContent = data.message || data.error || "Could not save API key.";
+      apiKeyStatus.classList.toggle("error", !res.ok);
+      if (res.ok) apiKeyInput.value = "";
+    } catch (err) {
+      apiKeyStatus.textContent = "Network error — is the server running?";
+      apiKeyStatus.classList.add("error");
+    } finally {
+      saveApiKeyBtn.disabled = false;
+    }
+  });
 
   function switchMode(mode) {
     inputMode = mode;
